@@ -20,7 +20,16 @@ RSpec.describe Product, type: :model do
       product = Product.create(name: "Test Name")
       product.save
 
-      expect(product.valid?).to be true
+      expect(product.valid?).to be(true)
+    end
+  end
+
+  describe "when destroying" do
+    it "destroys dependent reviews" do
+      product = FactoryBot.create(:product)
+      review = FactoryBot.create(:review, product: product)
+      product.destroy
+      expect{ Review.find(review.id) }.to raise_exception(ActiveRecord::RecordNotFound)
     end
   end
 end
