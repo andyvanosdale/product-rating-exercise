@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2022_06_11_030045) do
+ActiveRecord::Schema.define(version: 2022_06_13_162931) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "pgcrypto"
@@ -32,6 +32,10 @@ ActiveRecord::Schema.define(version: 2022_06_11_030045) do
     t.string "body"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.index ["product_id", "created_at"], name: "index_reviews_on_product_id_and_created_at_asc"
+    t.index ["product_id", "created_at"], name: "index_reviews_on_product_id_and_created_at_desc", order: { created_at: :desc }
+    t.index ["product_id", "rating"], name: "index_reviews_on_product_id_and_rating_asc"
+    t.index ["product_id", "rating"], name: "index_reviews_on_product_id_and_rating_desc", order: { rating: :desc }
     t.index ["product_id"], name: "index_reviews_on_product_id"
   end
 
