@@ -2,7 +2,7 @@
 
 class ProductController < ApplicationController
   def index
-    @products = Product.all
+    @products = Product.all.order(rank: :desc).order(created_at: :desc)
 
     render json: @products, status: :ok
   end

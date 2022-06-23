@@ -21,34 +21,60 @@
 #
 require 'rails_helper'
 
-RSpec.describe Review, type: :model do
-  describe "when creating" do
-    it "does not require body" do
-      product = FactoryBot.create(:product)
-      rating = Review.create(author: "Test Author", headline: "Test Headline", rating: 5, product: product)
-      rating.save
+RSpec::Matchers.define :reloadable_value do |reloadable, method|
+  match do |actual|
+    reloadable.reload
+    actual == reloadable.public_send(method)
+  end
+end
 
-      expect(rating.valid?).to be(true)
+RSpec.describe Review, type: :model do
+  let(:product) { FactoryBot.create(:product) }
+  after { product.destroy! }
+
+  describe "when creating" do
+    describe "does not have a body" do
+      let(:rating) { FactoryBot.create(:review, body: nil, product: product) }
+
+      it "is valid" do
+        expect(rating.valid?).to be(true)
+      end
     end
 
     describe "when validating" do
       describe "rating" do
-        it "must be greater than or equal to 1" do
-          product = FactoryBot.create(:product)
-          rating = Review.create(author: "Test Author", headline: "Test Headline", rating: 0, product: product)
-          rating.save
+        describe "must be greater than or equal to 1" do
+          let(:rating) { FactoryBot.build(:review, rating: 0, product: product) }
 
-          expect(rating.valid?).to be(false)
-          expect(rating.errors.of_kind?(:rating, :greater_than_or_equal_to)).to be(true)
+          it "raises error" do
+            expect{ rating.save! }.to raise_error(ActiveRecord::RecordInvalid)
+          end
+          it "has rating error" do
+            rating.save
+            expect(rating.errors.of_kind?(:rating, :greater_than_or_equal_to)).to be(true)
+          end
         end
-        it "must be less than or equal to 5" do
-          product = FactoryBot.create(:product)
-          rating = Review.create(author: "Test Author", headline: "Test Headline", rating: 6, product: product)
-          rating.save
 
-          expect(rating.valid?).to be(false)
-          expect(rating.errors.of_kind?(:rating, :less_than_or_equal_to)).to be(true)
+        describe "must be less than or equal to 5" do
+          let(:rating) { FactoryBot.build(:review, rating: 6, product: product) }
+
+          it "raises exception" do
+            expect{ rating.save! }.to raise_exception(ActiveRecord::RecordInvalid)
+          end
+          it "has rating error" do
+            rating.save
+            expect(rating.errors.of_kind?(:rating, :less_than_or_equal_to)).to be(true)
+          end
         end
+      end
+    end
+
+    describe "after_create" do
+      let(:rating) { FactoryBot.build(:review, product: product) }
+
+      it "ranks product" do
+        expect(Review::CreatedJob).to receive(:perform_async).with(reloadable_value(rating, :id), product.id)
+        rating.save!
       end
     end
   end

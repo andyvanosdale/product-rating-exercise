@@ -26,4 +26,12 @@ class Review < ApplicationRecord
   belongs_to :product
 
   validates :rating, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 5 }
+
+  after_create :notify_created
+
+  private
+
+  def notify_created
+    Review::CreatedJob.perform_async(id, product_id)
+  end
 end
